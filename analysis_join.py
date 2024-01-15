@@ -21,6 +21,8 @@ Mols above treshold (0.98):
 it creates also a .png where mols are displayed by their tanimoto simiarity
 '''
 
+import argparse
+from more_itertools import chunked
 import os
 from rdkit.Chem import Draw
 import matplotlib.pyplot as plt
@@ -30,8 +32,6 @@ from pathlib import Path
 from rdkit import Chem
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
-from more_itertools import chunked
-import argparse
 
 
 def num_mols_over_treshold(df, t=.9):
@@ -50,7 +50,7 @@ path = args.path
 out_dir = os.path.split(path)[0]
 log = create_log(out_dir, name="analysis_log.txt")
 # log = os.path.join(out_dir, "log.txt") # if you want to log preprocessing steps and analysis in same log file
-out_img_dir = out_dir+ "/img/"
+out_img_dir = out_dir + "/img/"
 Path(out_img_dir).mkdir(parents=True, exist_ok=True)
 
 # ----- Opening csv ----- #
@@ -58,7 +58,8 @@ out = pd.read_csv(path)
 technique_name = os.path.split(Path(path).parent)[-1]
 
 # ----- Log info ----- #
-append_line_to_log(log, f"Number of generated mols considered in the analysis: {len(set(out['SMILES_'+technique_name]))}")
+append_line_to_log(
+    log, f"Number of generated mols considered in the analysis: {len(set(out['SMILES_'+technique_name]))}")
 append_line_to_log(log, f"Exact matches: {num_mols_over_treshold(out, 1.)[1]}")
 append_line_to_log(log, f"Average Tanimoto dist: {out['tanimoto'].mean()}")
 t, n = num_mols_over_treshold(out, .7)
@@ -104,8 +105,7 @@ smiles = list(chunked(smiles, 200))
 
 for chunk_idx in range(len(mols)):
     # works only with ~ 200 mols and subImgSize=(300, 300)
-    img = Draw.MolsToGridImage(mols[chunk_idx], molsPerRow=2, subImgSize=(300, 300), legends=smiles[chunk_idx])
+    img = Draw.MolsToGridImage(mols[chunk_idx], molsPerRow=2, subImgSize=(
+        300, 300), legends=smiles[chunk_idx])
     name_mols_png = f"{technique_name}__mols{chunk_idx}.png"
-    img.save(os.path.join(out_img_dir, name_mols_png))    
-
-
+    img.save(os.path.join(out_img_dir, name_mols_png))

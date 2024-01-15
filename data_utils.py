@@ -15,7 +15,8 @@ def get_dir(path):
 
 
 def get_filename(path, ext=True):
-    if not ext: return get_filename_without_ext(path)
+    if not ext:
+        return get_filename_without_ext(path)
     _, filename = os.path.split(path)
     return filename
 
@@ -31,8 +32,9 @@ def get_ext(path):
 
 def extract_smi_props_to_csv_for_large_files(path_to_smiles, name):
 
-    if not name.endswith("_properties"): name += "_properties"
-    
+    if not name.endswith("_properties"):
+        name += "_properties"
+
     gen = (Chem.MolFromSmiles(smi)
            for smi in read_smiles_from_file(path_to_smiles))
 
@@ -57,7 +59,8 @@ def extract_smi_props_to_csv_for_large_files(path_to_smiles, name):
 
 def extract_smi_props_to_csv(path_to_smiles, name):
 
-    if not name.endswith("_properties"): name += "_properties"
+    if not name.endswith("_properties"):
+        name += "_properties"
 
     mols = mols_from_file(path_to_smiles)
     mols = keep_valid_mols(mols)

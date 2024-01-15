@@ -10,7 +10,7 @@ cmd: python compute_intersection_against_moses_train.py /home/nobilm@usi.ch/wd/d
 
 import os
 from pathlib import Path
-from data_utils import get_dir, get_filename,mols_from_file 
+from data_utils import get_dir, get_filename, mols_from_file
 import argparse
 from rdkit import Chem
 
@@ -19,7 +19,7 @@ from rdkit import Chem
 parser = argparse.ArgumentParser()
 parser.add_argument("path")
 args = parser.parse_args()
-path = args.path 
+path = args.path
 
 moses_path = "./data/training_data/moses.txt"
 moses_mols = mols_from_file(moses_path)

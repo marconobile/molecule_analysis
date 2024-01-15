@@ -33,7 +33,8 @@ smi_name = name+"_valid.smiles"
 save_smiles(smiles, dir, smi_name)
 out_pathfile = os.path.join(dir, 'no_dup_' + smi_name)
 in_pathfile = os.path.join(dir, smi_name)
-drop_duplicates_with_openbabel(in_pathfile, out_pathfile)  # in/out are .smiles files
+drop_duplicates_with_openbabel(
+    in_pathfile, out_pathfile)  # in/out are .smiles files
 
 try:
     no_dup_mols = mols_from_file(out_pathfile)

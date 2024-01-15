@@ -78,11 +78,13 @@ for i, (smi, df) in enumerate(out.groupby(gen_smiles_colname)):
     WEIGHT_ref.extend(df[ref_weight_colname])
 
     # compute dists
-    ref_mol_matched_fps = [Chem.RDKFingerprint(Chem.MolFromSmiles(smi)) for smi in df[ref_smiles_colname]]
-    tanimoto.extend(DataStructs.BulkTanimotoSimilarity(Chem.RDKFingerprint(Chem.MolFromSmiles(smi)), ref_mol_matched_fps))
+    ref_mol_matched_fps = [Chem.RDKFingerprint(
+        Chem.MolFromSmiles(smi)) for smi in df[ref_smiles_colname]]
+    tanimoto.extend(DataStructs.BulkTanimotoSimilarity(
+        Chem.RDKFingerprint(Chem.MolFromSmiles(smi)), ref_mol_matched_fps))
 
 
-out_df  = pd.DataFrame(
+out_df = pd.DataFrame(
     {gen_smiles_colname: smiles_gen,
      'NUM_ATOMS': NUM_ATOMS,
      'NUM_BONDS': NUM_BONDS,
@@ -90,6 +92,6 @@ out_df  = pd.DataFrame(
      ref_smiles_colname: SMILES_ref,
      ref_weight_colname: WEIGHT_ref,
      "tanimoto": tanimoto
-    })
+     })
 
 out_df.to_csv(outpath, index=False)
