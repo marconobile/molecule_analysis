@@ -1,3 +1,9 @@
+'''
+Takes 2 _properties.csv and joins using an inner join them matching over desired equal properties
+example: python compute_join_td.py /home/marconobile/Desktop/wd/data/synthesized_datasets/maybridge/no_dup_Maybridge_HitDiscover_valid_properties.csv /home/marconobile/Desktop/wd/data/generated_smiles/moses/aae/aae_properties.csv
+
+'''
+
 from data_utils import *
 import argparse
 import numpy as np
@@ -8,19 +14,18 @@ import pandas as pd
 from rdkit import Chem
 from rdkit import RDLogger
 import dask.dataframe as dd
-
 RDLogger.DisableLog('rdApp.*')
 
-
+# ----- Parser ----- #
 parser = argparse.ArgumentParser()
 parser.add_argument("reference")
 # path to csv file containing the properties of reference db eg: /home/marconobile/Desktop/wd/data/synthesized_datasets/maybridge/no_dup_Maybridge_HitDiscover_valid_properties.csv
 parser.add_argument("generated")
 # path to csv file containing the properties of generated db eg: /home/marconobile/Desktop/wd/data/generated_smiles/moses/aae/aae_properties.csv
-
-# example: python compute_join_td.py /home/marconobile/Desktop/wd/data/synthesized_datasets/maybridge/no_dup_Maybridge_HitDiscover_valid_properties.csv /home/marconobile/Desktop/wd/data/generated_smiles/moses/aae/aae_properties.csv
 args = parser.parse_args()
 
+
+# ----- Processing paths ----- #
 # reference
 reference_path = args.reference
 ref_df = pd.read_csv(reference_path)
@@ -34,10 +39,13 @@ gen_df = pd.read_csv(generated_path)
 gen_df = gen_df.drop(gen_df.columns[0], axis=1)
 _, gen_name = os.path.split(Path(generated_path).parent)
 
+outpath = f"/storage_common/nobilm/data_comparisons/data/generated_smiles/moses/{gen_name}/{gen_name}_vs_{ref_name}.csv"
+
+
+# ----- Compute inner join ----- #
 gen_df = dd.from_pandas(gen_df, npartitions=5000)
 ref_df = dd.from_pandas(ref_df, npartitions=5000)
 # out2 = dd.merge(gen_df1, ref_df, on=["NUM_ATOMS", "NUM_BONDS"]).compute()
-
 out = dd.merge(gen_df, ref_df, on=["NUM_ATOMS", "NUM_BONDS"], how='inner', suffixes=(
     "_"+str(gen_name), "_"+str(ref_name))).compute()
 
@@ -45,7 +53,8 @@ out = dd.merge(gen_df, ref_df, on=["NUM_ATOMS", "NUM_BONDS"], how='inner', suffi
 # out = pd.merge(gen_df, ref_df, on=["NUM_ATOMS", "NUM_BONDS"], how='inner', suffixes=(
 #     "_"+str(gen_name), "_"+str(ref_name)), copy=False)
 
-outpath = f"/storage_common/nobilm/data_comparisons/data/generated_smiles/moses/{gen_name}/{gen_name}_vs_{ref_name}.csv"
+
+# ----- Build output ----- #
 gen_smiles_colname = "SMILES_"+str(gen_name)
 ref_smiles_colname = "SMILES_"+str(ref_name)
 gen_weight_colname = "WEIGHT_"+str(gen_name)
@@ -68,16 +77,8 @@ for i, (smi, df) in enumerate(out.groupby(gen_smiles_colname)):
     SMILES_ref.extend(df[ref_smiles_colname])
     WEIGHT_ref.extend(df[ref_weight_colname])
 
-    # get fingerprint for gen mol
-    # gen_mol = Chem.MolFromSmiles(smi)
-    # gen_fps = Chem.RDKFingerprint(gen_mol)
-
-    # get fingerprints for all db mols with same NumA, NumB of gen mol
-    # ref_mol_matched = [Chem.MolFromSmiles(smi) for smi in list(df[ref_smiles_colname])]
-
-    ref_mol_matched_fps = [Chem.RDKFingerprint(Chem.MolFromSmiles(smi)) for smi in df[ref_smiles_colname]]
-
     # compute dists
+    ref_mol_matched_fps = [Chem.RDKFingerprint(Chem.MolFromSmiles(smi)) for smi in df[ref_smiles_colname]]
     tanimoto.extend(DataStructs.BulkTanimotoSimilarity(Chem.RDKFingerprint(Chem.MolFromSmiles(smi)), ref_mol_matched_fps))
 
 
@@ -92,33 +93,3 @@ out_df  = pd.DataFrame(
     })
 
 out_df.to_csv(outpath, index=False)
-
-
-
-
-# # SMILES_aae,NUM_ATOMS,NUM_BONDS,WEIGHT_aae,SMILES_maybridge,WEIGHT_maybridge,TANIMOTO
-# to_write = pd.DataFrame(columns=out.columns)
-
-# for i, (smi, df) in enumerate(out.groupby(gen_smiles_colname)):
-
-#     # get fingerprint for gen mol
-#     # gen_mol = Chem.MolFromSmiles(smi)
-#     # gen_fps = Chem.RDKFingerprint(gen_mol)
-
-#     # get fingerprints for all db mols with same NumA, NumB of gen mol
-#     ref_mol_matched = [Chem.MolFromSmiles(smi)
-#                        for smi in list(df[ref_smiles_colname])]
-#     ref_mol_matched_fps = [Chem.RDKFingerprint(m) for m in ref_mol_matched]
-
-#     # compute dists, precision 3
-#     df["TANIMOTO"] = np.around(
-#         np.array(DataStructs.BulkTanimotoSimilarity(Chem.RDKFingerprint(Chem.MolFromSmiles(smi)), ref_mol_matched_fps)), 3)
-
-#     pd.concat([to_write, df], ignore_index=True, copy=False)
-
-#     # if i == 0:
-#     #     df.to_csv(outpath, index=False)
-#     # else:
-#     #     df.to_csv(outpath, mode='a', header=False, index=False)
-
-# to_write.to_csv(outpath, index=False)

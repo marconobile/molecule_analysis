@@ -1,3 +1,13 @@
+'''
+creates a:
+no_dup_{ref}_valid_properties.csv
+such as:
+Maybridge_HitDiscover
+creating a file as:
+no_dup_Maybridge_HitDiscover_valid_properties.csv
+used to create the method_vs_ref.csv dataset
+'''
+
 import argparse
 from data_utils import *
 

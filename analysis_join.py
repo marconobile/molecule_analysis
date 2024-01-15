@@ -1,3 +1,21 @@
+'''
+performs the analysis of a method against a derired reference dataset
+the data for the analysis must be stored in a 
+{method}_vs_{ref_data}.csv eg: hmm_vs_maybridge.csv
+
+creates a log file with:
+Number of generated mols considered in the analysis: 
+Exact matches: 
+Average Tanimoto dist: 
+Mols above treshold (0.7): 
+Mols above treshold (0.9): 
+Mols above treshold (0.95): 
+Mols above treshold (0.98): 
+
+it creates also a .png where mols are displayed by their tanimoto simiarity
+'''
+
+
 from data_utils import *
 from pathlib import Path
 from rdkit.Chem import Draw
@@ -50,10 +68,10 @@ treshold = .9
 filter_ = out["tanimoto"] >= treshold
 filtered = out[filter_]
 
-t, n = num_mols_over_treshold(out)
+t, n = num_mols_over_treshold(out, .7)
 append_line_to_log(log, f"Mols above treshold ({t}): {n}")
 
-t, n = num_mols_over_treshold(out, .7)
+t, n = num_mols_over_treshold(out)
 append_line_to_log(log, f"Mols above treshold ({t}): {n}")
 
 t, n = num_mols_over_treshold(out, .95)
