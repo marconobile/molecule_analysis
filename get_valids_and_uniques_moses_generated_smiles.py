@@ -1,3 +1,7 @@
+'''
+preprocess all gen mols from moses
+'''
+
 from data_utils import *
 import os
 
