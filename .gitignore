@@ -1,0 +1,7 @@
+*.png
+*.csv
+*.sdf
+*.pyc
+*.zip
+.ipynb_checkpoints
+scratch

@@ -1,0 +1,3 @@
+At read of file: 90000
+After dropping invalid mols: 89998 #invalids: 2
+After dropping duplicates: 87388 #duplicates, 2610

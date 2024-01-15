@@ -1,0 +1,4 @@
+Number of generated mols considered in the analysis: 2831
+Exact matches: 11
+Average Tanimoto dist: 0.15797986787563595
+Mols above treshold (0.7): 109
