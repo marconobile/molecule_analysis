@@ -1,12 +1,68 @@
+import dask.dataframe as dd
 import os
 import pandas as pd
 from pathlib import Path
 from rdkit.Chem import Descriptors
 
-
-from rdkit import Chem
+from rdkit import Chem, DataStructs
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
+
+
+def compute_distance_over_join(joindf, gen_name, ref_name):
+    # ----- Build output ----- #
+    gen_smiles_colname = "SMILES_"+str(gen_name)
+    ref_smiles_colname = "SMILES_"+str(ref_name)
+    gen_weight_colname = "WEIGHT_"+str(gen_name)
+    ref_weight_colname = "WEIGHT_"+str(ref_name)
+
+    smiles_gen = []
+    NUM_ATOMS = []
+    NUM_BONDS = []
+    WEIGHT_gen = []
+    SMILES_ref = []
+    WEIGHT_ref = []
+    tanimoto = []
+
+    for i, (smi, df) in enumerate(joindf.groupby(gen_smiles_colname)):
+
+        smiles_gen.extend(df[gen_smiles_colname])
+        NUM_ATOMS.extend(df["NUM_ATOMS"])
+        NUM_BONDS.extend(df["NUM_BONDS"])
+        WEIGHT_gen.extend(df[gen_weight_colname])
+        SMILES_ref.extend(df[ref_smiles_colname])
+        WEIGHT_ref.extend(df[ref_weight_colname])
+
+        # compute dists
+        ref_mol_matched_fps = [Chem.RDKFingerprint(
+            Chem.MolFromSmiles(smi)) for smi in df[ref_smiles_colname]]
+        tanimoto.extend(DataStructs.BulkTanimotoSimilarity(
+            Chem.RDKFingerprint(Chem.MolFromSmiles(smi)), ref_mol_matched_fps))
+
+    return pd.DataFrame( 
+    {
+        gen_smiles_colname: smiles_gen,
+        'NUM_ATOMS': NUM_ATOMS,
+        'NUM_BONDS': NUM_BONDS,
+        gen_weight_colname: WEIGHT_gen,
+        ref_smiles_colname: SMILES_ref,
+        ref_weight_colname: WEIGHT_ref,
+        "tanimoto": tanimoto 
+    })
+
+
+
+def compute_join(gen_df, ref_df, gen_name, ref_name, columns=["NUM_ATOMS", "NUM_BONDS"]):
+    '''
+    Same of: 
+    inner join on atom AND bond exact match
+    out = pd.merge(gen_df, ref_df, on=["NUM_ATOMS", "NUM_BONDS"], how='inner', suffixes=(
+        "_"+str(gen_name), "_"+str(ref_name)), copy=False)
+    '''
+    gen_df = dd.from_pandas(gen_df, npartitions=1).repartition(partition_size="100MB")
+    ref_df = dd.from_pandas(ref_df, npartitions=1).repartition(partition_size="100MB")
+    return dd.merge(gen_df, ref_df, on=columns, how='inner', suffixes=(
+        "_"+str(gen_name), "_"+str(ref_name))).compute()
 
 
 def get_dir(path):
@@ -50,6 +106,7 @@ def extract_smi_props_to_csv_for_large_files(path_to_smiles, name):
                 'WEIGHT': Chem.Descriptors.ExactMolWt(m)
             }
 
+            # TODO replace write from 1 line at the time to write as a whole
             df = pd.DataFrame(data, index=[i])
             if i == 0:
                 df.to_csv(path_to_file)
