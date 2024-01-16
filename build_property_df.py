@@ -16,7 +16,7 @@ cmd: python build_property_df.py /home/marconobile/Desktop/wd/data/synthesized_d
 '''
 
 import argparse
-from data_utils import get_filename, extract_smi_props_to_csv_for_large_files
+from data_utils import get_filename, extract_smi_props_to_csv_for_large_files, extract_smi_props_to_csv
 
 parser = argparse.ArgumentParser()
 parser.add_argument("filepath")
@@ -24,4 +24,5 @@ args = parser.parse_args()
 filepath = args.filepath
 
 name = get_filename(filepath, ext=False)
-extract_smi_props_to_csv_for_large_files(filepath, name)
+# extract_smi_props_to_csv_for_large_files(filepath, name)
+extract_smi_props_to_csv(filepath, name)

@@ -116,16 +116,15 @@ def extract_smi_props_to_csv_for_large_files(path_to_smiles, name):
 
 def extract_smi_props_to_csv(path_to_smiles, name):
 
-    if not name.endswith("_properties"):
-        name += "_properties"
-
+    if not name.endswith("_properties"): name += "_properties"
     mols = mols_from_file(path_to_smiles)
-    mols = keep_valid_mols(mols)
-
-    smiles = mols2smi(mols)
-    atom_nums = [m.GetNumAtoms() for m in mols]
-    bond_num = [m.GetNumBonds() for m in mols]
-    m_weight = [Chem.Descriptors.ExactMolWt(m) for m in mols]
+    smiles, atom_nums, bond_num, m_weight = [], [], [], []
+     
+    for m in mols:
+        smiles.append(Chem.MolToSmiles(m))
+        atom_nums.append(m.GetNumAtoms())
+        bond_num.append(m.GetNumBonds())
+        m_weight.append(Chem.Descriptors.ExactMolWt(m))
 
     data = {
         'SMILES': smiles,
