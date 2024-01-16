@@ -233,7 +233,7 @@ def save_smiles(smiles, path, filename, ext='.txt'):
 
 def drop_duplicates_with_openbabel(in_file, out_file):
     cmd = f"obabel -ismiles {in_file} -osmiles -O{out_file} --unique"
-    os.system(cmd)
+    os.system(cmd) # synchronous call, the result is waited
 
 
 def create_log(path, name="log.txt"):
