@@ -32,10 +32,6 @@ gen_df = pd.read_csv(gen_path)
 ref_df = pd.read_csv(ref_path)
 gen_name = get_filename(gen_path.parent)
 ref_name = get_filename(ref_path.parent)
-
-gen_df = gen_df[:10000]
-ref_df = ref_df[:10000]
-
 nsplits = 50
 ref_df_splits = np.array_split(ref_df, nsplits)
 
