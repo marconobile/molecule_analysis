@@ -9,6 +9,12 @@ from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
 
 
+def num_mols_over_treshold(df, t=.9):
+    filter_ = df["tanimoto"] >= t
+    filtered = df[filter_]
+    return t, len(filtered)
+
+
 def compute_distance_over_join(joindf, gen_name, ref_name):
     # ----- Build output ----- #
     gen_smiles_colname = "SMILES_"+str(gen_name)
@@ -39,17 +45,16 @@ def compute_distance_over_join(joindf, gen_name, ref_name):
         tanimoto.extend(DataStructs.BulkTanimotoSimilarity(
             Chem.RDKFingerprint(Chem.MolFromSmiles(smi)), ref_mol_matched_fps))
 
-    return pd.DataFrame( 
-    {
-        gen_smiles_colname: smiles_gen,
-        'NUM_ATOMS': NUM_ATOMS,
-        'NUM_BONDS': NUM_BONDS,
-        gen_weight_colname: WEIGHT_gen,
-        ref_smiles_colname: SMILES_ref,
-        ref_weight_colname: WEIGHT_ref,
-        "tanimoto": tanimoto 
-    })
-
+    return pd.DataFrame(
+        {
+            gen_smiles_colname: smiles_gen,
+            'NUM_ATOMS': NUM_ATOMS,
+            'NUM_BONDS': NUM_BONDS,
+            gen_weight_colname: WEIGHT_gen,
+            ref_smiles_colname: SMILES_ref,
+            ref_weight_colname: WEIGHT_ref,
+            "tanimoto": tanimoto
+        })
 
 
 def compute_join(gen_df, ref_df, gen_name, ref_name, columns=["NUM_ATOMS", "NUM_BONDS"]):
@@ -59,8 +64,10 @@ def compute_join(gen_df, ref_df, gen_name, ref_name, columns=["NUM_ATOMS", "NUM_
     out = pd.merge(gen_df, ref_df, on=["NUM_ATOMS", "NUM_BONDS"], how='inner', suffixes=(
         "_"+str(gen_name), "_"+str(ref_name)), copy=False)
     '''
-    gen_df = dd.from_pandas(gen_df, npartitions=1).repartition(partition_size="100MB")
-    ref_df = dd.from_pandas(ref_df, npartitions=1).repartition(partition_size="100MB")
+    gen_df = dd.from_pandas(gen_df, npartitions=1).repartition(
+        partition_size="100MB")
+    ref_df = dd.from_pandas(ref_df, npartitions=1).repartition(
+        partition_size="100MB")
     return dd.merge(gen_df, ref_df, on=columns, how='inner', suffixes=(
         "_"+str(gen_name), "_"+str(ref_name))).compute()
 
@@ -116,10 +123,11 @@ def extract_smi_props_to_csv_for_large_files(path_to_smiles, name):
 
 def extract_smi_props_to_csv(path_to_smiles, name):
 
-    if not name.endswith("_properties"): name += "_properties"
+    if not name.endswith("_properties"):
+        name += "_properties"
     mols = mols_from_file(path_to_smiles)
     smiles, atom_nums, bond_num, m_weight = [], [], [], []
-     
+
     for m in mols:
         smiles.append(Chem.MolToSmiles(m))
         atom_nums.append(m.GetNumAtoms())
@@ -233,7 +241,7 @@ def save_smiles(smiles, path, filename, ext='.txt'):
 
 def drop_duplicates_with_openbabel(in_file, out_file):
     cmd = f"obabel -ismiles {in_file} -osmiles -O{out_file} --unique"
-    os.system(cmd) # synchronous call, the result is waited
+    os.system(cmd)  # synchronous call, the result is waited
 
 
 def create_log(path, name="log.txt"):

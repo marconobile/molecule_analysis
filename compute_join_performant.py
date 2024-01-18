@@ -1,79 +1,42 @@
 import os
 import pandas as pd
 from rdkit import Chem, DataStructs
-from rdkit.Chem import Descriptors
-from threading import Lock
 import dask.dataframe as dd
 from data_utils import compute_join, get_filename
 import argparse
 from pathlib import Path
-
-mutex = Lock()
-
-
-class Storage:
-    def __init__(self):
-        self.group_id = 0
-        self.data = {}
-
-    def init_entry(self, group_id):
-        self.data[group_id] = {
-            "smiles_gen": [],
-            "NUM_ATOMS": [],
-            "NUM_BONDS": [],
-            "WEIGHT_gen": [],
-            "SMILES_ref": [],
-            "WEIGHT_ref": [],
-            "tanimoto": []
-        }
-
-    def to_csv(self, pathtofile):
-        smiles_gen, NUM_ATOMS, NUM_BONDS, WEIGHT_gen, SMILES_ref, WEIGHT_ref, tanimoto = [
-        ], [], [], [], [], [], []
-        for dict_ in self.data.values():
-            smiles_gen.extend(dict_["smiles_gen"])
-            NUM_ATOMS.extend(dict_["NUM_ATOMS"])
-            NUM_BONDS.extend(dict_["NUM_BONDS"])
-            WEIGHT_gen.extend(dict_["WEIGHT_gen"])
-            SMILES_ref.extend(dict_["SMILES_ref"])
-            WEIGHT_ref.extend(dict_["WEIGHT_ref"])
-            tanimoto.extend(dict_["tanimoto"])
-
-        df_to_write = pd.DataFrame({"smiles_gen": smiles_gen, "NUM_ATOMS": NUM_ATOMS, "NUM_BONDS": NUM_BONDS, "WEIGHT_gen":
-                                    WEIGHT_gen, "SMILES_ref": SMILES_ref, "WEIGHT_ref": WEIGHT_ref, "tanimoto": tanimoto})
-        df_to_write.to_csv(pathtofile)
+import numpy as np
 
 
-def custom_func(group, storage, gen_name, ref_name):
+def custom_func(group, gen_name, ref_name):
     # https://stackoverflow.com/questions/60721290/how-to-apply-a-custom-function-to-groups-in-a-dask-dataframe-using-multiple-col
 
     smi_gen = str(group[f"SMILES_{gen_name}"].iloc[[0]].values[0])
-    if not Chem.MolFromSmiles(smi_gen):
+    mol_gen = Chem.MolFromSmiles(smi_gen)
+    if not mol_gen:
         return
 
     smi_ref_colname = f"SMILES_{ref_name}"
-
     ref_mol_matched_fps = [Chem.RDKFingerprint(Chem.MolFromSmiles(
         smi)) for smi in group[smi_ref_colname]]
     tanimotos = DataStructs.BulkTanimotoSimilarity(
-        Chem.RDKFingerprint(Chem.MolFromSmiles(smi_gen)), ref_mol_matched_fps)
+        Chem.RDKFingerprint(mol_gen), ref_mol_matched_fps)
 
-    with mutex:
-        storage.init_entry(storage.group_id)
-        storage.data[storage.group_id]["smiles_gen"] = (
-            group[f"SMILES_{gen_name}"]).tolist()
-        storage.data[storage.group_id]["NUM_ATOMS"] = (
-            group["NUM_ATOMS"]).tolist()
-        storage.data[storage.group_id]["NUM_BONDS"] = (
-            group["NUM_BONDS"]).tolist()
-        storage.data[storage.group_id]["WEIGHT_gen"] = (
-            group[f"WEIGHT_{gen_name}"]).tolist()
-        storage.data[storage.group_id]["SMILES_ref"] = (
-            group[smi_ref_colname]).tolist()
-        storage.data[storage.group_id]["WEIGHT_ref"] = (
-            group[f"WEIGHT_{ref_name}"]).tolist()
-        storage.data[storage.group_id]["tanimoto"] = tanimotos
-        storage.group_id += 1
+    gen_smiles_colname = "SMILES_"+str(gen_name)
+    ref_smiles_colname = "SMILES_"+str(ref_name)
+    gen_weight_colname = "WEIGHT_"+str(gen_name)
+    ref_weight_colname = "WEIGHT_"+str(ref_name)
+
+    df = pd.DataFrame({
+        gen_smiles_colname:  group[gen_smiles_colname].tolist(),
+        'NUM_ATOMS':  group[f"NUM_ATOMS"].tolist(),
+        'NUM_BONDS':  group[f"NUM_BONDS"].tolist(),
+        gen_weight_colname: group[gen_weight_colname].tolist(),
+        ref_smiles_colname: group[ref_smiles_colname].tolist(),
+        ref_weight_colname: group[ref_weight_colname].tolist(),
+        "tanimoto": tanimotos
+    })
+    df.to_csv(f"/storage_common/nobilm/test/{smi_gen}.csv")
 
 
 def main(gen_path, ref_path):
@@ -83,19 +46,20 @@ def main(gen_path, ref_path):
 
     gen_name = get_filename(gen_path.parent)
     ref_name = get_filename(ref_path.parent)
-    df = compute_join(gen_df, ref_df, gen_name, ref_name)
 
-    # store_path = "/storage_common/nobilm/{gen_name}_vs_intersection_join.csv"
-    # df = pd.read_csv(store_path)
+    nsplits = 50
+    ref_df_splits = np.array_split(ref_df, nsplits)
 
-    df = dd.from_pandas(df, npartitions=1).repartition(partition_size="100MB")
-    gb = df.groupby(f"SMILES_{gen_name}")
-    storage = Storage()
-    gb.apply(custom_func, storage, gen_name, ref_name).compute()
+    for split in ref_df_splits:
+        df = compute_join(gen_df, split, gen_name, ref_name)
+        df = dd.from_pandas(df, npartitions=1).repartition(
+            partition_size="100MB")
+        df = df.groupby(f"SMILES_{gen_name}")
+        df.apply(custom_func, gen_name, ref_name).compute()
 
-    outfile = Path("/storage_common/nobilm/data_comparisons/data/generated_smiles/moses/") / \
-        gen_name/f"{gen_name}_vs_{ref_name}.csv"
-    storage.to_csv(outfile)
+        # TODO insert check if tmp folder exists
+        cmd = "cd; cd /tmp; find /tmp -user nobilm@usi.ch -exec rm -r {} +;"
+        os.system(cmd)
 
 
 if __name__ == "__main__":

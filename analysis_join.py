@@ -26,18 +26,12 @@ from more_itertools import chunked
 import os
 from rdkit.Chem import Draw
 import matplotlib.pyplot as plt
-from data_utils import append_line_to_log, append_line_to_log, create_log
+from data_utils import append_line_to_log, append_line_to_log, create_log, num_mols_over_treshold
 import pandas as pd
 from pathlib import Path
 from rdkit import Chem
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
-
-
-def num_mols_over_treshold(df, t=.9):
-    filter_ = df["tanimoto"] >= t
-    filtered = out[filter_]
-    return t, len(filtered)
 
 
 # ----- Parser paths ----- #
@@ -83,12 +77,13 @@ filter_ = out["tanimoto"] >= treshold
 filtered = out[filter_]
 res = []
 for _, row in filtered.iterrows():
-    res.append({"TD": row["tanimoto"],
-                "GEN_SMI": row["SMILES_"+technique_name],
-                "REF_SMI": row["SMILES_maybridge"],
-                "GEN_MOL": Chem.MolFromSmiles(row["SMILES_"+technique_name]),
-                "REF_MOL": Chem.MolFromSmiles(row["SMILES_maybridge"]),
-                })
+    res.append({
+        "TD": row["tanimoto"],
+        "GEN_SMI": row["SMILES_"+technique_name],
+        "REF_SMI": row["SMILES_maybridge"],
+        "GEN_MOL": Chem.MolFromSmiles(row["SMILES_"+technique_name]),
+        "REF_MOL": Chem.MolFromSmiles(row["SMILES_maybridge"]),
+    })
 
 res = sorted(res, key=lambda d: d["TD"], reverse=True)
 
