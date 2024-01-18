@@ -7,7 +7,8 @@ Computes join between 2 _properties.csv in a performant way
 python compute_join_performant.py /wd/data/generated_smiles/moses/aae/aae_properties.csv /wd/data/synthesized_datasets/maybridge/no_dup_Maybridge_HitDiscover_valid_properties.csv
 
 '''
-
+import sys
+sys.path.append("..")
 import os
 import pandas as pd
 from rdkit import Chem, DataStructs
@@ -18,7 +19,7 @@ from pathlib import Path
 import numpy as np
 
 
-def custom_func(group, gen_name, ref_name):
+def custom_func(group, gen_name, ref_name, output_folder):
     # https://stackoverflow.com/questions/60721290/how-to-apply-a-custom-function-to-groups-in-a-dask-dataframe-using-multiple-col
 
     smi_gen = str(group[f"SMILES_{gen_name}"].iloc[[0]].values[0])
@@ -46,7 +47,7 @@ def custom_func(group, gen_name, ref_name):
         ref_weight_colname: group[ref_weight_colname].tolist(),
         "tanimoto": tanimotos
     })
-    df.to_csv(f"/storage_common/nobilm/test/{smi_gen}.csv")
+    df.to_csv(output_folder/(smi_gen+".csv"))
 
 
 def main(gen_path, ref_path, out_folder):
@@ -65,7 +66,7 @@ def main(gen_path, ref_path, out_folder):
         df = dd.from_pandas(df, npartitions=1).repartition(
             partition_size="100MB")
         df = df.groupby(f"SMILES_{gen_name}")
-        df.apply(custom_func, gen_name, ref_name).compute()
+        df.apply(custom_func, gen_name, ref_name, out_folder).compute()
 
         # TODO insert check if tmp folder exists
         cmd = "cd; cd /tmp; find /tmp -user nobilm@usi.ch -exec rm -r {} +;"
