@@ -2,15 +2,16 @@
 Given a smile file it computes its intersection against moses in a slightly inefficient manner, 
 not used to analyze generative modes
 just used to compare train data and ref data
+out file in same dir of input file 
 
 Example
 path = "/home/nobilm@usi.ch/wd/data/synthesized_datasets/maybridge/no_dup_Maybridge_HitDiscover_valid.smiles"
-cmd: python compute_intersection_against_moses_train.py /home/nobilm@usi.ch/wd/data/synthesized_datasets/maybridge/no_dup_Maybridge_HitDiscover_valid.smiles
+cmd: python get_intersection_against_moses_train.py /home/nobilm@usi.ch/wd/data/synthesized_datasets/maybridge/no_dup_Maybridge_HitDiscover_valid.smiles
 '''
 
 import os
 from pathlib import Path
-from data_utils import get_dir, get_filename, mols_from_file
+from utils.data_utils import get_dir, get_filename, mols_from_file
 import argparse
 from rdkit import Chem
 
@@ -24,6 +25,8 @@ path = args.path
 moses_path = "./data/training_data/moses.txt"
 moses_mols = mols_from_file(moses_path)
 ref_mols = mols_from_file(path)
+
+ref_mols = ref_mols[:5000]
 
 exact_matches_mols = []
 for m1 in moses_mols:
