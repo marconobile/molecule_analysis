@@ -32,7 +32,7 @@ gen_df = pd.read_csv(gen_path)
 ref_df = pd.read_csv(ref_path)
 gen_name = get_filename(gen_path.parent)
 ref_name = get_filename(ref_path.parent)
-nsplits = 50
+nsplits = 400
 ref_df_splits = np.array_split(ref_df, nsplits)
 
 gen_smiles_colname = "SMILES_"+str(gen_name)
