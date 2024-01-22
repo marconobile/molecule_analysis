@@ -244,7 +244,7 @@ def drop_duplicates_with_openbabel(in_file, out_file):
     os.system(cmd)  # synchronous call, the result is waited
 
 
-def create_log(path, name="log.txt"):
+def create_log(path=".", name="log.txt"):
     if not name.endswith(".txt"):
         name += ".txt"
     generate_file(path, name)
