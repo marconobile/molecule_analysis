@@ -1,5 +1,5 @@
 '''
-preprocess all gen mols from moses
+preprocess all generated mols from moses automatically
 '''
 
 from utils.data_utils import *

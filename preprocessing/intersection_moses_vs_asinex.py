@@ -1,3 +1,7 @@
+'''
+separate file to compute intersection vs moses, cuz moses is very large and requires further splitting
+'''
+
 import sys
 sys.path.append("..")
 from utils.data_utils import create_log, append_line_to_log

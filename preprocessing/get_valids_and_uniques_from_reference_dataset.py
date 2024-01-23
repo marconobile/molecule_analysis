@@ -1,12 +1,18 @@
 '''
+takes any sdf file as input
 perform preprocessing steps on file pointed at path, while logging the counts during the procedures
 step1) keep_valid_mols
 step2) remove duplicates
 step3) save file with remained smiles
 '''
 
-from utils.data_utils import *
 import os
+
+
+import sys
+sys.path.append("..")
+
+from utils.data_utils import *
 import argparse
 
 parser = argparse.ArgumentParser()

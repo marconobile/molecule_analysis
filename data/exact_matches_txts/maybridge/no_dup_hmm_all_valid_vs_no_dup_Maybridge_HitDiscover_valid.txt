@@ -1,0 +1,11 @@
+no_dup_hmm_all_valid smi: Cc1ccc(NC(=O)c2ccccc2)cc1, no_dup_Maybridge_HitDiscover_valid smi: Cc1ccc(NC(=O)c2ccccc2)cc1, tanimoto: 1.0, natoms: 16
+no_dup_hmm_all_valid smi: O=C(NCc1ccc(Cl)cc1)c1ccccc1, no_dup_Maybridge_HitDiscover_valid smi: O=C(NCc1ccc(Cl)cc1)c1ccccc1, tanimoto: 1.0, natoms: 17
+no_dup_hmm_all_valid smi: COC(=O)NCc1ccccc1, no_dup_Maybridge_HitDiscover_valid smi: COC(=O)NCc1ccccc1, tanimoto: 1.0, natoms: 12
+no_dup_hmm_all_valid smi: Cc1ccccc1NC(=O)c1ccccc1, no_dup_Maybridge_HitDiscover_valid smi: Cc1ccccc1NC(=O)c1ccccc1, tanimoto: 1.0, natoms: 16
+no_dup_hmm_all_valid smi: NC(=O)NCc1cccs1, no_dup_Maybridge_HitDiscover_valid smi: NC(=O)NCc1cccs1, tanimoto: 1.0, natoms: 10
+no_dup_hmm_all_valid smi: CC(=O)Nc1ccc(C(F)(F)F)cc1, no_dup_Maybridge_HitDiscover_valid smi: CC(=O)Nc1ccc(C(F)(F)F)cc1, tanimoto: 1.0, natoms: 14
+no_dup_hmm_all_valid smi: c1ccc(c2cnc[nH]2)cc1, no_dup_Maybridge_HitDiscover_valid smi: c1ccc(c2c[nH]cn2)cc1, tanimoto: 1.0, natoms: 11
+no_dup_hmm_all_valid smi: CC(=O)Nc1ccc(F)cc1, no_dup_Maybridge_HitDiscover_valid smi: CC(=O)Nc1ccc(F)cc1, tanimoto: 1.0, natoms: 11
+no_dup_hmm_all_valid smi: CCOC(=O)NCc1ccccc1, no_dup_Maybridge_HitDiscover_valid smi: CCOC(=O)NCc1ccccc1, tanimoto: 1.0, natoms: 13
+no_dup_hmm_all_valid smi: COc1ccc(NC(=O)c2ccccc2)cc1, no_dup_Maybridge_HitDiscover_valid smi: COc1ccc(NC(=O)c2ccccc2)cc1, tanimoto: 1.0, natoms: 17
+no_dup_hmm_all_valid smi: NC(=O)NCCc1ccccc1, no_dup_Maybridge_HitDiscover_valid smi: NC(=O)NCCc1ccccc1, tanimoto: 1.0, natoms: 12

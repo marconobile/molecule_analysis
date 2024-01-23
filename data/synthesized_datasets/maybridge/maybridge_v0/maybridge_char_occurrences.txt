@@ -1,0 +1,111 @@
+Chars dict:
+
+#
+(
+)
++
+-
+/
+1
+2
+3
+4
+5
+6
+7
+8
+9
+=
+@
+B
+C
+F
+H
+I
+N
+O
+S
+[
+\
+]
+a
+c
+l
+n
+o
+r
+s
+
+
+Counts
+:
+Character 'F' occurs 38459 times
+
+Character 'c' occurs 551313 times
+
+Character '1' occurs 147990 times
+
+Character '(' occurs 202781 times
+
+Character 'C' occurs 275993 times
+
+Character '2' occurs 87937 times
+
+Character ')' occurs 202781 times
+
+Character 'N' occurs 71780 times
+
+Character 'O' occurs 110090 times
+
+Character 'n' occurs 50961 times
+
+Character '=' occurs 86043 times
+
+Character '[' occurs 14406 times
+
+Character 'H' occurs 4384 times
+
+Character ']' occurs 14406 times
+
+Character 's' occurs 12003 times
+
+Character '+' occurs 4950 times
+
+Character '-' occurs 5642 times
+
+Character '3' occurs 25092 times
+
+Character 'l' occurs 23518 times
+
+Character 'S' occurs 22730 times
+
+Character 'o' occurs 7022 times
+
+Character 'B' occurs 2307 times
+
+Character 'r' occurs 2307 times
+
+Character '\' occurs 4189 times
+
+Character '/' occurs 19645 times
+
+Character '#' occurs 5871 times
+
+Character '4' occurs 4268 times
+
+Character '5' occurs 408 times
+
+Character 'I' occurs 290 times
+
+Character '6' occurs 50 times
+
+Character '@' occurs 2447 times
+
+Character '7' occurs 6 times
+
+Character '8' occurs 2 times
+
+Character '9' occurs 2 times
+
+Character 'a' occurs 2 times
+

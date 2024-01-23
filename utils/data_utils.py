@@ -2,9 +2,8 @@ import dask.dataframe as dd
 import os
 import pandas as pd
 from pathlib import Path
-from rdkit.Chem import Descriptors
 from itertools import islice
-from rdkit import Chem, DataStructs
+from rdkit import Chem
 import time
 from rdkit import RDLogger
 import argparse
@@ -14,8 +13,8 @@ RDLogger.DisableLog('rdApp.*')
 
 def argparser(*args):
     ''' 
-    pass to this an ordered list of strings that have to be taken from cmd line
-    then in code you can call gettatr from the return of this func to get associated string
+    *args: ordered list of strings taken from cmd line
+    usage: call gettatr from the return of this func to get associated string
     '''
     parser = argparse.ArgumentParser()
     for arg in args:
@@ -44,151 +43,79 @@ def separate_tuples(tuples_list):
 
 
 def num_mols_over_treshold(df, t=.9):
+    ''' given a pandas df with a "tanimoto" column, select all mols that have a value of tanimoto over t'''
     filter_ = df["tanimoto"] >= t
     filtered = df[filter_]
     return t, len(filtered)
 
 
-def flatten_list_of_lists(l): return [el for list_ in l for el in list_]
+def flatten_list_of_lists(l):
+    '''l is a list of lists that have to be flattened to get a list of els'''
+    return [el for list_ in l for el in list_]
 
-    
+
 def apply_f_parallelized_batched(f, iterable_, nels_per_split, ncores):
+    ''' 
+    given an iterable_, applies f to a batch of iterable_ of size nels_per_split
+    the batches are treated in parallel over ncores
+    f must be appliable over a list of elements
+    '''
     it = batched(iterable_, nels_per_split)
     with Pool(processes=ncores) as P:
         out = P.map(f, it)
     return flatten_list_of_lists(out)
 
 
-# def compute_distance_over_join(joindf, gen_name, ref_name):
-#     # ----- Build output ----- #
-#     gen_smiles_colname = "SMILES_"+str(gen_name)
-#     ref_smiles_colname = "SMILES_"+str(ref_name)
-#     gen_weight_colname = "WEIGHT_"+str(gen_name)
-#     ref_weight_colname = "WEIGHT_"+str(ref_name)
-
-#     smiles_gen = []
-#     NUM_ATOMS = []
-#     NUM_BONDS = []
-#     WEIGHT_gen = []
-#     SMILES_ref = []
-#     WEIGHT_ref = []
-#     tanimoto = []
-
-#     for i, (smi, df) in enumerate(joindf.groupby(gen_smiles_colname)):
-
-#         smiles_gen.extend(df[gen_smiles_colname])
-#         NUM_ATOMS.extend(df["NUM_ATOMS"])
-#         NUM_BONDS.extend(df["NUM_BONDS"])
-#         WEIGHT_gen.extend(df[gen_weight_colname])
-#         SMILES_ref.extend(df[ref_smiles_colname])
-#         WEIGHT_ref.extend(df[ref_weight_colname])
-
-#         # compute dists
-#         ref_mol_matched_fps = [Chem.RDKFingerprint(
-#             Chem.MolFromSmiles(smi)) for smi in df[ref_smiles_colname]]
-#         tanimoto.extend(DataStructs.BulkTanimotoSimilarity(
-#             Chem.RDKFingerprint(Chem.MolFromSmiles(smi)), ref_mol_matched_fps))
-
-#     return pd.DataFrame(
-#         {
-#             gen_smiles_colname: smiles_gen,
-#             'NUM_ATOMS': NUM_ATOMS,
-#             'NUM_BONDS': NUM_BONDS,
-#             gen_weight_colname: WEIGHT_gen,
-#             ref_smiles_colname: SMILES_ref,
-#             ref_weight_colname: WEIGHT_ref,
-#             "tanimoto": tanimoto
-#         })
-
-
-def compute_join(gen_df, ref_df, gen_name, ref_name, columns=["NUM_ATOMS", "NUM_BONDS"]):
-    '''
-    Same of: 
-    inner join on atom AND bond exact match
-    out = pd.merge(gen_df, ref_df, on=["NUM_ATOMS", "NUM_BONDS"], how='inner', suffixes=(
-        "_"+str(gen_name), "_"+str(ref_name)), copy=False)
-    '''
-    gen_df = dd.from_pandas(gen_df, npartitions=1).repartition(
-        partition_size="100MB")
-    ref_df = dd.from_pandas(ref_df, npartitions=1).repartition(
-        partition_size="100MB")
-    return dd.merge(gen_df, ref_df, on=columns, how='inner', suffixes=(
-        "_"+str(gen_name), "_"+str(ref_name))).compute()
-
-
 def get_dir(path):
+    '''
+    given a path/to/file.ext
+    returns path/to/
+    '''
     dir, _ = os.path.split(path)
     return dir
 
 
 def get_filename(path, ext=True):
-    if not ext:
-        return get_filename_without_ext(path)
+    '''
+    given a path/to/file.ext
+    returns file.ext if ext, just file otherwise
+    '''
     _, filename = os.path.split(path)
+    if not ext:
+        return filename.split(".")[0]
     return filename
 
 
-def get_filename_without_ext(path):
-    _, filename = os.path.split(path)
-    return filename.split(".")[0]
-
-
 def get_ext(path):
+    '''given a path/to/file.ext
+    returns extension'''
     return os.path.splitext(path)[-1].lower()
 
 
-# def extract_smi_props_to_csv_for_large_files(path_to_smiles, name):
+# def extract_smi_props_to_csv(path_to_smiles, name):
 
 #     if not name.endswith("_properties"):
 #         name += "_properties"
+#     mols = mols_from_file(path_to_smiles)
+#     smiles, atom_nums, bond_num, m_weight = [], [], [], []
 
-#     gen = (Chem.MolFromSmiles(smi)
-#            for smi in read_smiles_from_file(path_to_smiles))
+#     for m in mols:
+#         smiles.append(Chem.MolToSmiles(m))
+#         atom_nums.append(m.GetNumAtoms())
+#         bond_num.append(m.GetNumBonds())
+#         m_weight.append(Chem.Descriptors.ExactMolWt(m))
 
-#     filename = str(name)+'.csv'
+#     data = {
+#         'SMILES': smiles,
+#         'NUM_ATOMS': atom_nums,
+#         'NUM_BONDS': bond_num,
+#         'WEIGHT': m_weight,
+#     }
+
+#     df = pd.DataFrame(data)
+#     filename = str(name) + '_properties.csv'
 #     path_to_file = os.path.join(str(Path(path_to_smiles).parent), filename)
-
-#     for i, m in enumerate(gen):
-#         if (m and validate_rdkit_mol(m)):
-#             data = {
-#                 'SMILES': Chem.MolToSmiles(m),
-#                 'NUM_ATOMS': m.GetNumAtoms(),
-#                 'NUM_BONDS': m.GetNumBonds(),
-#                 'WEIGHT': Chem.Descriptors.ExactMolWt(m)
-#             }
-
-#             # TODO replace write from 1 line at the time to write as a whole
-#             df = pd.DataFrame(data, index=[i])
-#             if i == 0:
-#                 df.to_csv(path_to_file)
-#             else:
-#                 df.to_csv(path_to_file, mode='a', header=False)
-
-
-def extract_smi_props_to_csv(path_to_smiles, name):
-
-    if not name.endswith("_properties"):
-        name += "_properties"
-    mols = mols_from_file(path_to_smiles)
-    smiles, atom_nums, bond_num, m_weight = [], [], [], []
-
-    for m in mols:
-        smiles.append(Chem.MolToSmiles(m))
-        atom_nums.append(m.GetNumAtoms())
-        bond_num.append(m.GetNumBonds())
-        m_weight.append(Chem.Descriptors.ExactMolWt(m))
-
-    data = {
-        'SMILES': smiles,
-        'NUM_ATOMS': atom_nums,
-        'NUM_BONDS': bond_num,
-        'WEIGHT': m_weight,
-    }
-
-    df = pd.DataFrame(data)
-    filename = str(name) + '_properties.csv'
-    path_to_file = os.path.join(str(Path(path_to_smiles).parent), filename)
-    df.to_csv(path_to_file)
+#     df.to_csv(path_to_file)
 
 
 def mols_from_file(pathfile, drop_none=False):
@@ -209,12 +136,8 @@ def read_smiles_from_file(pathfile):
         return [line.rstrip() for line in file]
 
 
-def smi2mols(smiles):
-    return [Chem.MolFromSmiles(smi) for smi in smiles]
-
-
-def mols2smi(mols):
-    return [Chem.MolToSmiles(mol) for mol in mols]
+def smi2mols(smiles): return [Chem.MolFromSmiles(smi) for smi in smiles]
+def mols2smi(mols): return [Chem.MolToSmiles(mol) for mol in mols]
 
 
 def keep_valid_mols(mols):
@@ -240,11 +163,21 @@ def validate_rdkit_mol(mol):
 
 
 class TimeCode:
+    '''
+    Utility class that times code execution. 
+    Usage: instanciate it when code starts 
+    call compute compute_ellapsed when you want to evaluate passed time
+    '''
+
     def __init__(self):
+        self.start_timer()
+
+    def start_timer(self):
         self.start = time.time()
+
     def compute_ellapsed(self):
         self.end = time.time()
-        return self.end - self.start # in seconds
+        return self.end - self.start  # in seconds
 
 
 def generate_file(path, filename):
@@ -295,6 +228,9 @@ def save_smiles(smiles, path, filename, ext='.txt'):
 
 
 def drop_duplicates_with_openbabel(in_file, out_file):
+    '''
+    Given an input .smiles file, generate an out_file.smiles with no duplicates or invalid mols
+    '''
     cmd = f"obabel -ismiles {in_file} -osmiles -O{out_file} --unique"
     os.system(cmd)  # synchronous call, the result is waited
 
@@ -307,8 +243,12 @@ def create_log(path=".", name="log.txt"):
 
 
 def append_line_to_log(path_to_log, line):
-    with open(path_to_log, "a") as log:
-        log.write(line + "\n")
+    with open(path_to_log, "a") as log:    
+        if isinstance(line, list):
+            for w in line:
+                log.write(str(w) + "\n")
+        else:
+            log.write(str(line) + "\n")
 
 
 def delete_file(path_to_file):
@@ -317,3 +257,23 @@ def delete_file(path_to_file):
             os.remove(path_to_file)
         except OSError:
             raise f"{path_to_file} already existing and could not be removed"
+
+
+def are_mols_equal(m1, m2):
+    '''
+    evaluate if 2 mols (or smiles) refer to the same underlying mol
+    '''
+    if isinstance(m1, str):
+        m1 = Chem.MolFromSmiles(m1)
+    if isinstance(m2, str):
+        m2 = Chem.MolFromSmiles(m2)
+    return m1.HasSubstructMatch(m2) and m2.HasSubstructMatch(m1)
+
+
+def get_all_ext_files_in_path(path, ext):
+    file_list = []    
+    for root, _, files in os.walk(path):
+        for file in files:
+            if file.endswith(ext):
+                file_list.append(os.path.join(root, file))
+    return file_list

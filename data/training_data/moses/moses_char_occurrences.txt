@@ -1,0 +1,27 @@
+
+chars  ['#', '(', ')', '-', '1', '2', '3', '4', '5', '6', '=', 'B', 'C', 'F', 'H', 'N', 'O', 'S', '[', ']', 'c', 'l', 'n', 'o', 'r', 's']                                                                 
+Character 'C' occurs 10726584 times.                                                                 
+Character 'S' occurs 285476 times.                                                                   
+Character '(' occurs 5460725 times.                                                                  
+Character '=' occurs 2259380 times.                                                                  
+Character ')' occurs 5460725 times.                                                                  
+Character 'c' occurs 14222955 times.                                                                 
+Character '1' occurs 4455986 times.                                                                  
+Character '2' occurs 2771422 times.                                                                  
+Character '[' occurs 179011 times.                                                                   
+Character 'n' occurs 2332619 times.                                                                  
+Character 'H' occurs 179011 times.                                                                   
+Character ']' occurs 179011 times.                                                                   
+Character 'N' occurs 2346896 times.                                                                  
+Character 'l' occurs 187351 times.                                                                   
+Character '3' occurs 829620 times.                                                                   
+Character 'F' occurs 491767 times.                                                                   
+Character '-' occurs 295097 times.                                                                   
+Character '4' occurs 88622 times.                                                                    
+Character '#' occurs 127115 times.                                                                   
+Character 'B' occurs 52677 times.                                                                    
+Character 'r' occurs 52677 times.
+Character 's' occurs 276266 times.                                                                   
+Character 'o' occurs 255480 times.                                                                   
+Character '5' occurs 2024 times.                                                                     
+Character '6' occurs 14 times. 
