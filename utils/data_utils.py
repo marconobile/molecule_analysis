@@ -3,10 +3,44 @@ import os
 import pandas as pd
 from pathlib import Path
 from rdkit.Chem import Descriptors
-
+from itertools import islice
 from rdkit import Chem, DataStructs
+import time
 from rdkit import RDLogger
+import argparse
+from multiprocessing import Pool
 RDLogger.DisableLog('rdApp.*')
+
+
+def argparser(*args):
+    ''' 
+    pass to this an ordered list of strings that have to be taken from cmd line
+    then in code you can call gettatr from the return of this func to get associated string
+    '''
+    parser = argparse.ArgumentParser()
+    for arg in args:
+        parser.add_argument(arg)
+    return parser.parse_args()
+
+
+def batched(iterable, n):
+    ''' Given an iterable creates a generator that return batches of n elements of iterable'''
+    # batched('ABCDEFG', 3) --> ABC DEF G
+    if n < 1:
+        raise ValueError('n must be at least one')
+    it = iter(iterable)
+    while batch := tuple(islice(it, n)):
+        yield batch
+
+
+def separate_tuples(tuples_list):
+    '''Given a list of bidimensional tuples returns 2 lists
+    each list is the list of the first els of the input list 
+    and the second list is the list of the second elements of the tuples
+    '''
+    first_elements = [item[0] for item in tuples_list]
+    second_elements = [item[1] for item in tuples_list]
+    return first_elements, second_elements
 
 
 def num_mols_over_treshold(df, t=.9):
@@ -15,46 +49,56 @@ def num_mols_over_treshold(df, t=.9):
     return t, len(filtered)
 
 
-def compute_distance_over_join(joindf, gen_name, ref_name):
-    # ----- Build output ----- #
-    gen_smiles_colname = "SMILES_"+str(gen_name)
-    ref_smiles_colname = "SMILES_"+str(ref_name)
-    gen_weight_colname = "WEIGHT_"+str(gen_name)
-    ref_weight_colname = "WEIGHT_"+str(ref_name)
+def flatten_list_of_lists(l): return [el for list_ in l for el in list_]
 
-    smiles_gen = []
-    NUM_ATOMS = []
-    NUM_BONDS = []
-    WEIGHT_gen = []
-    SMILES_ref = []
-    WEIGHT_ref = []
-    tanimoto = []
+    
+def apply_f_parallelized_batched(f, iterable_, nels_per_split, ncores):
+    it = batched(iterable_, nels_per_split)
+    with Pool(processes=ncores) as P:
+        out = P.map(f, it)
+    return flatten_list_of_lists(out)
 
-    for i, (smi, df) in enumerate(joindf.groupby(gen_smiles_colname)):
 
-        smiles_gen.extend(df[gen_smiles_colname])
-        NUM_ATOMS.extend(df["NUM_ATOMS"])
-        NUM_BONDS.extend(df["NUM_BONDS"])
-        WEIGHT_gen.extend(df[gen_weight_colname])
-        SMILES_ref.extend(df[ref_smiles_colname])
-        WEIGHT_ref.extend(df[ref_weight_colname])
+# def compute_distance_over_join(joindf, gen_name, ref_name):
+#     # ----- Build output ----- #
+#     gen_smiles_colname = "SMILES_"+str(gen_name)
+#     ref_smiles_colname = "SMILES_"+str(ref_name)
+#     gen_weight_colname = "WEIGHT_"+str(gen_name)
+#     ref_weight_colname = "WEIGHT_"+str(ref_name)
 
-        # compute dists
-        ref_mol_matched_fps = [Chem.RDKFingerprint(
-            Chem.MolFromSmiles(smi)) for smi in df[ref_smiles_colname]]
-        tanimoto.extend(DataStructs.BulkTanimotoSimilarity(
-            Chem.RDKFingerprint(Chem.MolFromSmiles(smi)), ref_mol_matched_fps))
+#     smiles_gen = []
+#     NUM_ATOMS = []
+#     NUM_BONDS = []
+#     WEIGHT_gen = []
+#     SMILES_ref = []
+#     WEIGHT_ref = []
+#     tanimoto = []
 
-    return pd.DataFrame(
-        {
-            gen_smiles_colname: smiles_gen,
-            'NUM_ATOMS': NUM_ATOMS,
-            'NUM_BONDS': NUM_BONDS,
-            gen_weight_colname: WEIGHT_gen,
-            ref_smiles_colname: SMILES_ref,
-            ref_weight_colname: WEIGHT_ref,
-            "tanimoto": tanimoto
-        })
+#     for i, (smi, df) in enumerate(joindf.groupby(gen_smiles_colname)):
+
+#         smiles_gen.extend(df[gen_smiles_colname])
+#         NUM_ATOMS.extend(df["NUM_ATOMS"])
+#         NUM_BONDS.extend(df["NUM_BONDS"])
+#         WEIGHT_gen.extend(df[gen_weight_colname])
+#         SMILES_ref.extend(df[ref_smiles_colname])
+#         WEIGHT_ref.extend(df[ref_weight_colname])
+
+#         # compute dists
+#         ref_mol_matched_fps = [Chem.RDKFingerprint(
+#             Chem.MolFromSmiles(smi)) for smi in df[ref_smiles_colname]]
+#         tanimoto.extend(DataStructs.BulkTanimotoSimilarity(
+#             Chem.RDKFingerprint(Chem.MolFromSmiles(smi)), ref_mol_matched_fps))
+
+#     return pd.DataFrame(
+#         {
+#             gen_smiles_colname: smiles_gen,
+#             'NUM_ATOMS': NUM_ATOMS,
+#             'NUM_BONDS': NUM_BONDS,
+#             gen_weight_colname: WEIGHT_gen,
+#             ref_smiles_colname: SMILES_ref,
+#             ref_weight_colname: WEIGHT_ref,
+#             "tanimoto": tanimoto
+#         })
 
 
 def compute_join(gen_df, ref_df, gen_name, ref_name, columns=["NUM_ATOMS", "NUM_BONDS"]):
@@ -93,32 +137,32 @@ def get_ext(path):
     return os.path.splitext(path)[-1].lower()
 
 
-def extract_smi_props_to_csv_for_large_files(path_to_smiles, name):
+# def extract_smi_props_to_csv_for_large_files(path_to_smiles, name):
 
-    if not name.endswith("_properties"):
-        name += "_properties"
+#     if not name.endswith("_properties"):
+#         name += "_properties"
 
-    gen = (Chem.MolFromSmiles(smi)
-           for smi in read_smiles_from_file(path_to_smiles))
+#     gen = (Chem.MolFromSmiles(smi)
+#            for smi in read_smiles_from_file(path_to_smiles))
 
-    filename = str(name)+'.csv'
-    path_to_file = os.path.join(str(Path(path_to_smiles).parent), filename)
+#     filename = str(name)+'.csv'
+#     path_to_file = os.path.join(str(Path(path_to_smiles).parent), filename)
 
-    for i, m in enumerate(gen):
-        if (m and validate_rdkit_mol(m)):
-            data = {
-                'SMILES': Chem.MolToSmiles(m),
-                'NUM_ATOMS': m.GetNumAtoms(),
-                'NUM_BONDS': m.GetNumBonds(),
-                'WEIGHT': Chem.Descriptors.ExactMolWt(m)
-            }
+#     for i, m in enumerate(gen):
+#         if (m and validate_rdkit_mol(m)):
+#             data = {
+#                 'SMILES': Chem.MolToSmiles(m),
+#                 'NUM_ATOMS': m.GetNumAtoms(),
+#                 'NUM_BONDS': m.GetNumBonds(),
+#                 'WEIGHT': Chem.Descriptors.ExactMolWt(m)
+#             }
 
-            # TODO replace write from 1 line at the time to write as a whole
-            df = pd.DataFrame(data, index=[i])
-            if i == 0:
-                df.to_csv(path_to_file)
-            else:
-                df.to_csv(path_to_file, mode='a', header=False)
+#             # TODO replace write from 1 line at the time to write as a whole
+#             df = pd.DataFrame(data, index=[i])
+#             if i == 0:
+#                 df.to_csv(path_to_file)
+#             else:
+#                 df.to_csv(path_to_file, mode='a', header=False)
 
 
 def extract_smi_props_to_csv(path_to_smiles, name):
@@ -195,6 +239,14 @@ def validate_rdkit_mol(mol):
         return False
 
 
+class TimeCode:
+    def __init__(self):
+        self.start = time.time()
+    def compute_ellapsed(self):
+        self.end = time.time()
+        return self.end - self.start # in seconds
+
+
 def generate_file(path, filename):
     '''
     if path does not exist it is created 
@@ -215,6 +267,9 @@ def generate_file(path, filename):
             os.remove(path_to_file)
         except OSError:
             raise f"{path_to_file} already existing and could not be removed"
+
+    cmd = f"touch {path_to_file};"
+    os.system(cmd)
     return path_to_file
 
 
